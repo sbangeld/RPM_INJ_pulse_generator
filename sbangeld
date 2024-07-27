@@ -1,0 +1,50 @@
+int eng_on = 1;
+int rpm = 0;
+int pulse = 12;
+int frec = 0;
+int t_inj = 0;
+int inj_pin = 2;
+int inj_interval_perc = 0;
+int inj_interval = 0;
+int inj_efect = 0;
+unsigned long currentMillis;
+unsigned long previousMillis = 0;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(pulse, OUTPUT);
+  pinMode(7, INPUT_PULLUP);
+}
+
+void loop() {
+  currentMillis = millis();
+  eng_on = digitalRead(7);
+  if (eng_on == HIGH) {
+    rpm = analogRead(A4);
+    frec = map(rpm, 0, 1023, 30, 133);
+    tone(pulse, frec);
+    t_inj = analogRead(A1);
+    inj_interval_perc = map(t_inj, 0, 1023, 1, 255);
+    inj_interval = map(frec, 30, 133, 30, 6);
+    inj_efect = inj_interval * inj_interval_perc / 255;
+    Serial.print(inj_efect);
+    Serial.print('\n');
+    if (t_inj > 0) {
+      if (currentMillis - previousMillis <= inj_efect) {
+        digitalWrite(inj_pin, LOW);
+      } else if (currentMillis - previousMillis <= inj_interval) {
+        digitalWrite(inj_pin, HIGH);
+      } else {
+        previousMillis = currentMillis;
+        inj_pin = inj_pin + 1;
+      }
+      if (inj_pin > 5) {
+        inj_pin = 2;
+      }
+    }
+  }
+}
